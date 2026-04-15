@@ -8,3 +8,8 @@ kingshot.db
 .DS_Store
 *.log
 .env*
+*.db-shm
+*.db-wal
+history.json
+redeem.py
+redeem.log
