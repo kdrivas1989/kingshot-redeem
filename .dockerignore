@@ -1,0 +1,11 @@
+.git/
+__pycache__/
+*.pyc
+.venv/
+venv/
+kingshot.db
+*.log
+.DS_Store
+.gitignore
+.dockerignore
+Dockerfile

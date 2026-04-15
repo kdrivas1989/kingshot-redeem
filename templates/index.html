@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kingshot Code Redeemer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .status-redeemed { color: #22c55e; }
+    .status-already_claimed { color: #eab308; }
+    .status-expired { color: #9ca3af; }
+    .status-not_found { color: #9ca3af; }
+    .status-error { color: #ef4444; }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+  <div class="max-w-2xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-center mb-2">Kingshot Code Redeemer</h1>
+    <p class="text-gray-400 text-center mb-8">Add your accounts, redeem all active gift codes with one click.</p>
+
+    <!-- Add Account -->
+    <div class="bg-gray-800 rounded-lg p-4 mb-6">
+      <h2 class="text-lg font-semibold mb-3">Add Account</h2>
+      <form id="add-form" class="flex gap-2">
+        <input id="fid-input" type="text" placeholder="Player ID (e.g. 117357420)"
+               class="flex-1 bg-gray-700 text-gray-100 rounded px-3 py-2 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <button type="submit" id="add-btn"
+                class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded transition">
+          Add
+        </button>
+      </form>
+      <p id="add-error" class="text-red-400 text-sm mt-2 hidden"></p>
+      <p id="add-success" class="text-green-400 text-sm mt-2 hidden"></p>
+    </div>
+
+    <!-- Account List -->
+    <div class="bg-gray-800 rounded-lg p-4 mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold">Your Accounts</h2>
+        <span id="account-count" class="text-gray-400 text-sm">{{ accounts|length }} account(s)</span>
+      </div>
+      <div id="account-list">
+        {% if accounts %}
+          {% for a in accounts %}
+          <div class="account-row flex items-center justify-between py-2 border-b border-gray-700 last:border-0" data-id="{{ a.id }}">
+            <div>
+              <span class="font-medium">{{ a.nickname }}</span>
+              <span class="text-gray-400 text-sm ml-2">ID: {{ a.fid }}</span>
+              {% if a.kingdom %}
+              <span class="text-gray-500 text-sm ml-2">K{{ a.kingdom }}</span>
+              {% endif %}
+            </div>
+            <button onclick="removeAccount({{ a.id }})" class="text-red-400 hover:text-red-300 text-sm transition">Remove</button>
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-gray-500" id="no-accounts">No accounts added yet.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Redeem -->
+    <div class="bg-gray-800 rounded-lg p-4 mb-6">
+      <button id="redeem-btn" onclick="redeemAll()"
+              class="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-wait text-white font-bold text-lg py-3 rounded transition">
+        Redeem All Codes
+      </button>
+      <div id="redeem-status" class="text-gray-400 text-sm mt-2 text-center hidden"></div>
+    </div>
+
+    <!-- Results -->
+    <div id="results-section" class="bg-gray-800 rounded-lg p-4 mb-6 hidden">
+      <h2 class="text-lg font-semibold mb-3">Results</h2>
+      <div id="results-content"></div>
+    </div>
+
+    <!-- History -->
+    <div class="bg-gray-800 rounded-lg p-4">
+      <div class="flex items-center justify-between mb-3 cursor-pointer" onclick="toggleHistory()">
+        <h2 class="text-lg font-semibold">Redemption History</h2>
+        <span id="history-toggle" class="text-gray-400 text-sm">Show</span>
+      </div>
+      <div id="history-section" class="hidden">
+        <div id="history-content" class="text-gray-400 text-sm">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Add Account ---
+    document.getElementById('add-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('fid-input');
+      const btn = document.getElementById('add-btn');
+      const errEl = document.getElementById('add-error');
+      const successEl = document.getElementById('add-success');
+      const fid = input.value.trim();
+      if (!fid) return;
+
+      btn.disabled = true;
+      btn.textContent = 'Verifying...';
+      errEl.classList.add('hidden');
+      successEl.classList.add('hidden');
+
+      try {
+        const resp = await fetch('/api/accounts', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({fid}),
+        });
+        const data = await resp.json();
+        if (data.ok) {
+          const a = data.account;
+          addAccountRow(a);
+          input.value = '';
+          successEl.textContent = `Added ${a.nickname}!`;
+          successEl.classList.remove('hidden');
+          setTimeout(() => successEl.classList.add('hidden'), 3000);
+        } else {
+          errEl.textContent = data.error;
+          errEl.classList.remove('hidden');
+        }
+      } catch (err) {
+        errEl.textContent = 'Network error. Try again.';
+        errEl.classList.remove('hidden');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Add';
+    });
+
+    function addAccountRow(a) {
+      const noAccounts = document.getElementById('no-accounts');
+      if (noAccounts) noAccounts.remove();
+
+      const list = document.getElementById('account-list');
+      const div = document.createElement('div');
+      div.className = 'account-row flex items-center justify-between py-2 border-b border-gray-700 last:border-0';
+      div.dataset.id = a.id;
+      div.innerHTML = `
+        <div>
+          <span class="font-medium">${esc(a.nickname)}</span>
+          <span class="text-gray-400 text-sm ml-2">ID: ${esc(a.fid)}</span>
+          ${a.kingdom ? `<span class="text-gray-500 text-sm ml-2">K${esc(a.kingdom)}</span>` : ''}
+        </div>
+        <button onclick="removeAccount(${a.id})" class="text-red-400 hover:text-red-300 text-sm transition">Remove</button>
+      `;
+      list.appendChild(div);
+      updateCount();
+    }
+
+    async function removeAccount(id) {
+      if (!confirm('Remove this account?')) return;
+      try {
+        const resp = await fetch(`/api/accounts/${id}`, {method: 'DELETE'});
+        const data = await resp.json();
+        if (data.ok) {
+          const row = document.querySelector(`.account-row[data-id="${id}"]`);
+          if (row) row.remove();
+          updateCount();
+          if (!document.querySelectorAll('.account-row').length) {
+            document.getElementById('account-list').innerHTML = '<p class="text-gray-500" id="no-accounts">No accounts added yet.</p>';
+          }
+        }
+      } catch (err) {}
+    }
+
+    function updateCount() {
+      const count = document.querySelectorAll('.account-row').length;
+      document.getElementById('account-count').textContent = `${count} account(s)`;
+    }
+
+    // --- Redeem All ---
+    async function redeemAll() {
+      const btn = document.getElementById('redeem-btn');
+      const status = document.getElementById('redeem-status');
+      const resultsSection = document.getElementById('results-section');
+      const resultsContent = document.getElementById('results-content');
+
+      btn.disabled = true;
+      btn.textContent = 'Redeeming... (this takes a while)';
+      status.textContent = 'Scraping codes and redeeming on all accounts. ~2 seconds per code per account.';
+      status.classList.remove('hidden');
+      resultsSection.classList.add('hidden');
+
+      try {
+        const resp = await fetch('/api/redeem', {method: 'POST'});
+        const data = await resp.json();
+
+        if (!data.ok && data.error) {
+          status.textContent = data.error;
+          status.classList.remove('hidden');
+          btn.disabled = false;
+          btn.textContent = 'Redeem All Codes';
+          return;
+        }
+
+        let html = `<p class="text-gray-400 text-sm mb-3">Codes tried: ${data.codes_tried.map(c => `<code class="bg-gray-700 px-1 rounded">${esc(c)}</code>`).join(', ')}</p>`;
+
+        for (const player of data.results) {
+          html += `<div class="mb-4"><h3 class="font-medium mb-1">${esc(player.nickname)} <span class="text-gray-500 text-sm">(${esc(player.fid)})</span></h3>`;
+          html += '<div class="space-y-1">';
+          for (const c of player.codes) {
+            const icon = c.status === 'redeemed' ? '&#10003;' : c.status === 'already_claimed' ? '&#8226;' : c.status === 'error' ? '&#10007;' : '&#8211;';
+            html += `<div class="flex items-center gap-2 text-sm">
+              <code class="bg-gray-700 px-1 rounded">${esc(c.code)}</code>
+              <span class="status-${c.status}">${icon} ${esc(c.message)}</span>
+            </div>`;
+          }
+          html += '</div></div>';
+        }
+
+        resultsContent.innerHTML = html;
+        resultsSection.classList.remove('hidden');
+        status.classList.add('hidden');
+      } catch (err) {
+        status.textContent = 'Network error. Try again.';
+      }
+      btn.disabled = false;
+      btn.textContent = 'Redeem All Codes';
+    }
+
+    // --- History ---
+    let historyLoaded = false;
+
+    async function toggleHistory() {
+      const section = document.getElementById('history-section');
+      const toggle = document.getElementById('history-toggle');
+      const visible = !section.classList.contains('hidden');
+
+      if (visible) {
+        section.classList.add('hidden');
+        toggle.textContent = 'Show';
+        return;
+      }
+
+      section.classList.remove('hidden');
+      toggle.textContent = 'Hide';
+
+      if (!historyLoaded) {
+        try {
+          const resp = await fetch('/api/history');
+          const data = await resp.json();
+          const content = document.getElementById('history-content');
+          if (!data.history.length) {
+            content.textContent = 'No redemption history yet.';
+            return;
+          }
+          let html = '<div class="space-y-1 max-h-64 overflow-y-auto">';
+          for (const h of data.history) {
+            const icon = h.status === 'redeemed' ? '&#10003;' : h.status === 'already_claimed' ? '&#8226;' : '&#8211;';
+            const time = h.attempted.replace('T', ' ').slice(0, 16);
+            html += `<div class="flex items-center gap-2 text-xs">
+              <span class="text-gray-500 w-28 shrink-0">${time}</span>
+              <span class="w-24 shrink-0">${esc(h.nickname)}</span>
+              <code class="bg-gray-700 px-1 rounded">${esc(h.code)}</code>
+              <span class="status-${h.status}">${icon} ${esc(h.message)}</span>
+            </div>`;
+          }
+          html += '</div>';
+          content.innerHTML = html;
+          historyLoaded = true;
+        } catch (err) {
+          document.getElementById('history-content').textContent = 'Failed to load history.';
+        }
+      }
+    }
+
+    // --- Util ---
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+  </script>
+</body>
+</html>

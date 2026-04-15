@@ -1,0 +1,80 @@
+{
+  "117357420": {
+    "BUNNY405": {
+      "status": "already_claimed",
+      "date": "2026-04-05T01:08:00.469511"
+    },
+    "NOFOOLIN": {
+      "status": "already_claimed",
+      "date": "2026-04-05T01:08:02.971619"
+    },
+    "OFFICIALSTORE04": {
+      "status": "already_claimed",
+      "date": "2026-04-05T01:08:05.487429"
+    },
+    "VIP777": {
+      "status": "already_claimed",
+      "date": "2026-04-05T01:08:08.017301"
+    },
+    "KS0408": {
+      "status": "invalid",
+      "date": "2026-04-11T09:17:03.965605"
+    },
+    "WEEKENDPLAN": {
+      "status": "redeemed",
+      "date": "2026-04-13T21:24:18.369599"
+    }
+  },
+  "133903370": {
+    "BUNNY405": {
+      "status": "already_claimed",
+      "date": "2026-04-05T01:08:10.962910"
+    },
+    "NOFOOLIN": {
+      "status": "already_claimed",
+      "date": "2026-04-05T01:08:13.452919"
+    },
+    "OFFICIALSTORE04": {
+      "status": "already_claimed",
+      "date": "2026-04-05T01:08:16.078955"
+    },
+    "VIP777": {
+      "status": "already_claimed",
+      "date": "2026-04-05T01:08:18.595516"
+    },
+    "KS0408": {
+      "status": "invalid",
+      "date": "2026-04-11T09:17:07.421688"
+    },
+    "WEEKENDPLAN": {
+      "status": "redeemed",
+      "date": "2026-04-13T21:24:24.639630"
+    }
+  },
+  "162814071": {
+    "BUNNY405": {
+      "status": "redeemed",
+      "date": "2026-04-05T01:12:50.311636"
+    },
+    "NOFOOLIN": {
+      "status": "redeemed",
+      "date": "2026-04-05T01:12:52.805503"
+    },
+    "OFFICIALSTORE04": {
+      "status": "redeemed",
+      "date": "2026-04-05T01:12:55.341218"
+    },
+    "VIP777": {
+      "status": "redeemed",
+      "date": "2026-04-05T01:12:57.869205"
+    },
+    "KS0408": {
+      "status": "invalid",
+      "date": "2026-04-11T09:17:11.686208"
+    },
+    "WEEKENDPLAN": {
+      "status": "redeemed",
+      "date": "2026-04-13T21:24:30.903730"
+    }
+  }
+}
