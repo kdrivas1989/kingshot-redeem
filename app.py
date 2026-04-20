@@ -308,6 +308,9 @@ def redeem_all():
     results = []
 
     for acct in accounts:
+        # Must login before redeeming (API requires it)
+        kingshot_login(acct["fid"])
+
         acct_results = []
         for code in codes:
             err_code, status_msg = kingshot_redeem(acct["fid"], code)
