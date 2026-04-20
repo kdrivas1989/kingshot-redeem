@@ -29,9 +29,6 @@ COOKIE_MAX_AGE = 365 * 24 * 60 * 60  # 1 year
 
 FALLBACK_CODES = ["BUNNY405", "NOFOOLIN", "OFFICIALSTORE04", "VIP777"]
 
-# Default accounts — auto-added for every new session
-DEFAULT_ACCOUNTS = ["117357420", "133903370", "162814071"]
-
 ERR_MESSAGES = {
     "20000": "Redeemed successfully",
     "40004": "Timeout, retry",
@@ -207,20 +204,6 @@ def index():
             )
         else:
             conn.execute("UPDATE sessions SET last_seen = ? WHERE id = ?", (now, session_id))
-        conn.commit()
-
-    # Auto-add default accounts if this session has none
-    existing_count = conn.execute(
-        "SELECT COUNT(*) FROM accounts WHERE session_id = ?", (session_id,)
-    ).fetchone()[0]
-    if existing_count == 0:
-        for fid in DEFAULT_ACCOUNTS:
-            player = kingshot_login(fid)
-            if player:
-                conn.execute(
-                    "INSERT OR IGNORE INTO accounts (session_id, fid, nickname, kingdom, added_at) VALUES (?, ?, ?, ?, ?)",
-                    (session_id, fid, player.get("nickname", "Unknown"), str(player.get("kid", "")), now),
-                )
         conn.commit()
 
     accounts = conn.execute(
